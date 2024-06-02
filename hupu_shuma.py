@@ -14,21 +14,17 @@ class Hupu(object):
         response = requests.get(url, headers = self.headers)
         return response.content
     def parse_list_data(self,data):
-        data = data.decode()
-        html = etree.HTML(data)
+        html = etree.HTML(data.decode())
 
         el_list = html.xpath("//div[@class='post-title']/a")
         data_list = []
-
         for el in el_list:
             temp = {}
-
-            print(el.xpath("/text()"))
-            print(el.xpath("/@href"))
-            # temp["title"] = el.xpath("/text()")
-            # temp["link"] = "https://bbs.hupu.com" + str(el.xpath("/@href"))
+            temp["title"] = el.xpath("//text()")
+            print(temp["title"])
+            temp["link"] = "https://bbs.hupu.com" + str(el.xpath("//@href"))
+            print(temp["link"])
             data_list.append(temp)
-
         page_count = int(html.xpath("//ul[@class='hupu-rc-pagination']/li[last()-1]/a/text()"))
         if self.page_num < page_count:
             self.page_num += 1
@@ -58,7 +54,9 @@ class Hupu(object):
 
 if __name__ == '__main__':
     hupu = Hupu()
-    hupu.run()
+    response = hupu.run()
+
+
 
 
 
