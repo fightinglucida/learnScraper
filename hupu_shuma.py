@@ -6,8 +6,25 @@ import pandas as pd
 from lxml import etree
 from datetime import datetime
 
+class Hupu_root(object):
+    def __init__(self):
+        self.rootUrl = "https://bbs.hupu.com/"
+        self.headers = {
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36"
+        }
+        self.topic_list = {}
+    def get_data(self,url):
+        response = requests.get(url, headers=self.headers)
+        return response.content
+
+    def parse_topic(self, data):
+        html = etree
+
+
+
 class Hupu(object):
     def __init__(self):
+        self.rootUrl = "https://bbs.hupu.com"
         self.url = "https://bbs.hupu.com/73-postdate"
         self.topic = ""
         self.headers = {
@@ -15,9 +32,38 @@ class Hupu(object):
         }
         self.page_num = 1
         self.data_list = []
+        self.topic_list = []
     def get_data(self,url):
         response = requests.get(url, headers = self.headers)
         return response.content
+    def parse_topic(self,data):
+        html = etree.HTML(data.decode())
+        topic_ret = html.xpath("//div[@class='hu-pc-navigation-topic-type-popups']/a")
+        print(len(topic_ret))
+
+        topic_list = []
+        for topic in topic_ret:
+            temp = {}
+            topic_type = topic.xpath("../../a/text()")
+            temp["topic_type"] = topic_type[0]
+            topic_type_url = topic.xpath("../../a/@href")
+            temp["topic_type_url"] = topic_type_url[0]
+            topic_name = topic.xpath("./div[@class='topic-item-name']/text()")
+            temp["topic_name"] = topic_name[0]
+            topic_url = topic.xpath("./@href")
+            temp["topic_url"] = self.rootUrl + topic_url[0]
+            topic_heat = topic.xpath("./div[@class='topic-item-heat']/text()")
+            temp["topic_heat"] = topic_heat[0]
+
+            topic_list.append(temp)
+
+        self.topic_list = topic_list
+        print(self.topic_list)
+
+    def init_topic(self):
+        topic_data = self.get_data(self.rootUrl)
+        self.parse_topic(topic_data)
+
     def parse_list_data(self,data):
         html = etree.HTML(data.decode())
         data_list = []
@@ -101,5 +147,6 @@ class Hupu(object):
 
 if __name__ == '__main__':
     hupu = Hupu()
-    response = hupu.run()
+    response = hupu.init_topic()
+
 
