@@ -1,4 +1,6 @@
 # coding:utf-8
+import time
+import random
 import requests
 from lxml import etree
 
@@ -20,13 +22,17 @@ class Hupu(object):
         data_list = []
         for el in el_list:
             temp = {}
-            temp["title"] = el.xpath("//text()")
-            print(temp["title"])
-            temp["link"] = "https://bbs.hupu.com" + str(el.xpath("//@href"))
-            print(temp["link"])
+            parse_title = el.xpath("./text()")
+            temp["title"] = parse_title[0]
+            parse_link = el.xpath("./@href")
+            temp["link"] = "https://bbs.hupu.com" + parse_link[0]
             data_list.append(temp)
-        page_count = int(html.xpath("//ul[@class='hupu-rc-pagination']/li[last()-1]/a/text()"))
-        if self.page_num < page_count:
+        page_count_list = html.xpath("//ul[@class='hupu-rc-pagination']/li[last()-1]/a/text()")
+
+        page_count = int(page_count_list[0])
+        print("当前总页码为："+ str(page_count_list))
+        if self.page_num <= page_count:
+            print(self.page_num)
             self.page_num += 1
         else:
             self.page_num = 0
@@ -46,9 +52,12 @@ class Hupu(object):
             data_list, next_url = self.parse_list_data(list_page_data)
 
             if data_list == None:
+                print("data_list is None")
+                print(self.page_num)
                 break
 
             self.data_list += data_list
+            time.sleep(random.randint(300, 500)/1000.0)
 
         print(self.data_list)
 
@@ -56,35 +65,3 @@ if __name__ == '__main__':
     hupu = Hupu()
     response = hupu.run()
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-# url = "https://bbs.hupu.com/73-postdate"
-#
-# headers = {
-#     "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36"
-# }
-#
-# response = requests.get(url, headers = headers)
-#
-# html = etree.HTML(response.content.decode())
-#
-# dict_tweet = {}
-#
-# print(html.xpath("//div[@class='post-title']/a/text()"))
-#
-# print(html.xpath("//div[@class='post-title']/a/@href"))
-
-# with open('hupu_shuma_new.html', 'wb') as f:
-#     f.write(response.content)
