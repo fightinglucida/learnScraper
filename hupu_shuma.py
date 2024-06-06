@@ -17,16 +17,35 @@ class Hupu(object):
         return response.content
     def parse_list_data(self,data):
         html = etree.HTML(data.decode())
-
-        el_list = html.xpath("//div[@class='post-title']/a")
+        el_list = html.xpath("//div[@class='bbs-sl-web-post-layout']")
         data_list = []
         for el in el_list:
             temp = {}
-            parse_title = el.xpath("./text()")
+            parse_title = el.xpath("./div[@class='post-title']/a/text()")
             temp["title"] = parse_title[0]
-            parse_link = el.xpath("./@href")
+            parse_link = el.xpath("./div[@class='post-title']/a/@href")
             temp["link"] = "https://bbs.hupu.com" + parse_link[0]
+            parse_reply_view = el.xpath("./div[@class='post-datum']/text()")
+            temp["reply"] = parse_reply_view[0]
+            parse_author = el.xpath("./div[@class='post-auth']/a/text()")
+            temp["author_name"] = parse_author[0]
+            parse_author_link = el.xpath("./div[@class='post-auth']/a/@href")
+            temp["author_link"] = parse_author_link[0]
+            parse_post_time = el.xpath("./div[@class='post-time']/text()")
+            temp["post_time"] = parse_post_time[0]
             data_list.append(temp)
+
+        # el_list = html.xpath("//div[@class='post-title']/a")
+        # data_list = []
+        # for el in el_list:
+        #     temp = {}
+        #     parse_title = el.xpath("./text()")
+        #     temp["title"] = parse_title[0]
+        #     parse_link = el.xpath("./@href")
+        #     temp["link"] = "https://bbs.hupu.com" + parse_link[0]
+        #     data_list.append(temp)
+
+
         page_count_list = html.xpath("//ul[@class='hupu-rc-pagination']/li[last()-1]/a/text()")
 
         page_count = int(page_count_list[0])
@@ -57,7 +76,7 @@ class Hupu(object):
                 break
 
             self.data_list += data_list
-            time.sleep(random.randint(300, 500)/1000.0)
+            time.sleep(random.randint(400, 900)/1000.0)
 
         print(self.data_list)
 
