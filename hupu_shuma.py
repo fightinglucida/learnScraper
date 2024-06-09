@@ -36,6 +36,11 @@ class Hupu(object):
     def get_data(self,url):
         response = requests.get(url, headers = self.headers)
         return response.content
+    # 将热度值由字符串值改为整数值
+    def str2int(self,stringNumber):
+        if 'w' in stringNumber:
+            return int(float(stringNumber.replace('w', '')) * 10000)
+        return int(stringNumber)
     def parse_topic(self,data):
         html = etree.HTML(data.decode())
         topic_ret = html.xpath("//div[@class='hu-pc-navigation-topic-type-popups']/a")
@@ -47,13 +52,13 @@ class Hupu(object):
             topic_type = topic.xpath("../../a/text()")
             temp["topic_type"] = topic_type[0]
             topic_type_url = topic.xpath("../../a/@href")
-            temp["topic_type_url"] = topic_type_url[0]
+            temp["topic_type_url"] = self.rootUrl + topic_type_url[0]
             topic_name = topic.xpath("./div[@class='topic-item-name']/text()")
             temp["topic_name"] = topic_name[0]
             topic_url = topic.xpath("./@href")
             temp["topic_url"] = self.rootUrl + topic_url[0]
             topic_heat = topic.xpath("./div[@class='topic-item-heat']/text()")
-            temp["topic_heat"] = topic_heat[0]
+            temp["topic_heat"] = self.str2int(topic_heat[0])
 
             topic_list.append(temp)
 
