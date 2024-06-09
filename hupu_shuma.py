@@ -103,8 +103,8 @@ class Hupu(object):
             temp["link"] = "https://bbs.hupu.com" + parse_link[0]
             parse_reply_view = el.xpath("./div[@class='post-datum']/text()")
             parse_reply, parse_view = parse_reply_view[0].split(' / ')
-            temp["reply"] = parse_reply
-            temp["view"] = parse_view
+            temp["reply"] = self.str2int(parse_reply)
+            temp["view"] = self.str2int(parse_view)
 
             parse_author = el.xpath("./div[@class='post-auth']/a/text()")
             temp["author_name"] = parse_author[0]
