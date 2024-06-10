@@ -32,7 +32,10 @@ class Hupu(object):
         }
         self.page_num = 1
         self.data_list = []
+        # 原始话题分类的列表
         self.topic_list = []
+        # 按照热度排序后的话题分类列表
+        self.heat_list = []
     def get_data(self,url):
         response = requests.get(url, headers = self.headers)
         return response.content
@@ -63,7 +66,10 @@ class Hupu(object):
             topic_list.append(temp)
 
         self.topic_list = topic_list
-        print(self.topic_list)
+        self.heat_list = sorted(self.topic_list, key=lambda x: x['topic_heat'], reverse=True)
+        for rank,topic in enumerate(self.heat_list, start=1):
+            print(f"热度第{rank}名：{topic['topic_name']}-{topic['topic_type']}-热度值：{topic['topic_heat']}")
+
 
     def init_topic(self):
         topic_data = self.get_data(self.rootUrl)
