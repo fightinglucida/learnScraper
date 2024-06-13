@@ -156,8 +156,47 @@ class Hupu(object):
         self.saveData(self.data_list)
         print(f"总计爬取并保存数据 {len(self.data_list)} 条")
 
+    # 获取单个帖子的楼主发布和回复信息的整合后的内容，整合为docx 或者 txt
+    '''
+    输出的格式为：
+    # 标题：
+    
+    ## 楼主发布内容：
+    
+    
+    ### 回帖人1：
+    @引用内容：（如果有就写这部分，没有就不写）
+    
+    回帖内容：
+    
+    ### 回帖人2：
+    @引用内容：
+    
+    回帖内容：
+    
+    
+    '''
+    def get_posts(self):
+        post_url = "https://bbs.hupu.com/626730816.html"
+        post_content = self.get_data(post_url)
+        html = etree.HTML(post_content.decode())
+
+        post_saved_list = []
+        # 提取楼主的原帖部分
+        reply_owner = html.xpath("//div[@class='index_post-wrapper__IXkg_']")
+        owner_name = reply_owner[0].xpath(".//a[@class='post-user_post-user-comp-info-top-name__N3D4w']/text()")[0]
+        post_title = reply_owner[0].xpath(".//span[@class='post-user_post-user-comp-info-bottom-title__gtj2K']/text()")[0]
+        print(owner_name, post_title)
+
+        # 提取回帖部分
+        reply_array = html.xpath("//div[@class='post-reply-list_post-reply-list-wrapper__o4_81 post-reply-list-wrapper']")
+
+
+
+
+
 if __name__ == '__main__':
     hupu = Hupu()
-    response = hupu.init_topic()
+    response = hupu.get_posts()
 
 
