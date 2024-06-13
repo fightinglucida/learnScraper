@@ -186,7 +186,9 @@ class Hupu(object):
         reply_owner = html.xpath("//div[@class='index_post-wrapper__IXkg_']")
         owner_name = reply_owner[0].xpath(".//a[@class='post-user_post-user-comp-info-top-name__N3D4w']/text()")[0]
         post_title = reply_owner[0].xpath(".//span[@class='post-user_post-user-comp-info-bottom-title__gtj2K']/text()")[0]
+        post_details = reply_owner[0].xpath(".//div[@class='thread-content-detail']/p/text()")
         print(owner_name, post_title)
+        print(post_details)
 
         # 提取回帖部分
         reply_array = html.xpath("//div[@class='post-reply-list_post-reply-list-wrapper__o4_81 post-reply-list-wrapper']")
