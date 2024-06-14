@@ -152,26 +152,24 @@ class Hupu(object):
     # 获取单个帖子的楼主发布和回复信息的整合后的内容，整合为docx 或者 txt
     '''
     输出的格式为：
-    # 标题：
+    # 帖子标题：{OP-title}
+    # 发帖人：{OP-name}:
+    # 发帖内容：{OP-content}
+    ---
     
-    ## 楼主发布内容：
+    # 回帖人：{RP-name}
+    # @引用{QT-name}内容：{QT-content}（如果有内容，就写这部分，如果字段为空，就不写）
+    # 回复内容：{RP-content}
+
+    ...
     
-    
-    ### 回帖人1：
-    @引用内容：（如果有就写这部分，没有就不写）
-    
-    回帖内容：
-    
-    ### 回帖人2：
-    @引用内容：
-    
-    回帖内容：
-    
+    # 回帖人：{RP-name}
+    # @引用{QT-name}内容：{QT-content}（如果有内容，就写这部分，如果字段为空，就不写）
+    # 回复内容：{RP-content}
     
     '''
-    def get_posts(self):
-        # post_url = posts_url
-        post_url = "https://bbs.hupu.com/626730816.html"
+    def get_posts(self, posts_url):
+        post_url = posts_url
         base_url = post_url.split(".html")[0]
 
         post_content = self.get_data(post_url)
@@ -234,43 +232,47 @@ class Hupu(object):
                 print(post_saved_list)
                 print(f"已抓取{--cur_page}页，抓取结束")
                 break
+        self.export_to_txt(post_saved_list)
 
 
+    def export_to_txt(self, post_list):
+        print("export to text")
+        import json
 
+        data = post_list
 
+        # 构建目标字符串
+        output_lines = []
 
+        # 添加主贴信息
+        op = data[0]
+        output_lines.append(f"# 帖子标题：{op['OP-title']}")
+        output_lines.append(f"# 发帖人：{op['OP-name']}:")
+        output_lines.append(f"# 发帖内容：{op['OP-content']}")
+        output_lines.append('---\n')
 
+        # 添加回贴信息
+        for item in data[1:]:
+            output_lines.append(f"# 回帖人：{item['RP-name']}")
+            if item['QT-content']:
+                output_lines.append(f"# @引用{item['QT-name']}内容：{item['QT-content']}")
+            output_lines.append(f"# 回复内容：{item['RP-content']}")
+            output_lines.append('---\n')
 
+        # 将结果列表转换为单个字符串
+        output_str = '\n'.join(output_lines)
+        filename = f"{op['OP-title']}.txt"
+        # 将字符串写入文件
+        with open(filename, 'w', encoding='utf-8') as f:
+            f.write(output_str)
 
-        # # 提取回帖部分
-        # reply_array = html.xpath("//div[@class='post-reply-list_post-reply-list-wrapper__o4_81 post-reply-list-wrapper']")
-        # for reply_item in reply_array:
-        #     reply_dict = {}
-        #     # 抓取回帖人昵称
-        #     reply_name = reply_item.xpath(".//div[@class='user-base-info']/a/text()")
-        #     reply_dict['RP-name'] = reply_name[0]
-        #     # 抓取引用人昵称
-        #     reply_quote_name = reply_item.xpath(".//div[@class='index_quote-text__HggrH']/span/a/text()")
-        #     # 抓取引用内容
-        #     reply_quote_content = reply_item.xpath(".//div[@class='index_simple-detail-content__3FPFA']/p/text()")
-        #     if len(reply_quote_name) > 0:
-        #         reply_dict['QT-name'] = reply_quote_name[0]
-        #         reply_dict['QT-content'] = reply_quote_content[0]
-        #     else:
-        #         reply_dict['QT-name'] = ''
-        #         reply_dict['QT-content'] = ''
-        #     # 抓取回帖内容
-        #     reply_content = reply_item.xpath(".//div[@class='post-reply-list-content']//div[@class='thread-content-detail']/p/text()")
-        #     reply_dict['RP-content'] = "\n".join(reply_content)
-        #
-        #
-        #
-        #     print(reply_dict)
+        print("文件已成功导出为 forum_posts.txt")
 
 
 
 if __name__ == '__main__':
     hupu = Hupu()
-    response = hupu.get_posts()
+    response = hupu.get_posts("https://bbs.hupu.com/626803953.html")
+
 
 
