@@ -5,20 +5,11 @@ import requests
 import pandas as pd
 from lxml import etree
 from datetime import datetime
+from selenium import webdriver
+from selenium.webdriver.common.by import By
+from selenium.webdriver.chrome.service import Service
+from webdriver_manager.chrome import ChromeDriverManager
 
-class Hupu_root(object):
-    def __init__(self):
-        self.rootUrl = "https://bbs.hupu.com/"
-        self.headers = {
-            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36"
-        }
-        self.topic_list = {}
-    def get_data(self,url):
-        response = requests.get(url, headers=self.headers)
-        return response.content
-
-    def parse_topic(self, data):
-        html = etree
 
 
 
@@ -36,6 +27,8 @@ class Hupu(object):
         self.topic_list = []
         # 按照热度排序后的话题分类列表
         self.heat_list = []
+
+
     def get_data(self,url):
         response = requests.get(url, headers = self.headers)
         return response.content
@@ -177,23 +170,102 @@ class Hupu(object):
     
     '''
     def get_posts(self):
+        # post_url = posts_url
         post_url = "https://bbs.hupu.com/626730816.html"
+        base_url = post_url.split(".html")[0]
+
         post_content = self.get_data(post_url)
+
         html = etree.HTML(post_content.decode())
+
+        # 统计页码总数
+        cur_page = 1
+        page_count_list = html.xpath("//ul[@class='hupu-rc-pagination']/li[last()-1]/a/text()")
+        if len(page_count_list) == 2:
+            page_count = int(page_count_list[0])
+        else:
+            page_count = 1
 
         post_saved_list = []
         # 提取楼主的原帖部分
+        op_dict = {}
         reply_owner = html.xpath("//div[@class='index_post-wrapper__IXkg_']")
-        owner_name = reply_owner[0].xpath(".//a[@class='post-user_post-user-comp-info-top-name__N3D4w']/text()")[0]
-        post_title = reply_owner[0].xpath(".//span[@class='post-user_post-user-comp-info-bottom-title__gtj2K']/text()")[0]
-        post_details = reply_owner[0].xpath(".//div[@class='thread-content-detail']/p/text()")
-        print(owner_name, post_title)
-        print(post_details)
+        owner_name = reply_owner[0].xpath(".//a[@class='post-user_post-user-comp-info-top-name__N3D4w']/text()")
+        op_dict['OP-name'] = owner_name[0]
+        owner_title = reply_owner[0].xpath(".//span[@class='post-user_post-user-comp-info-bottom-title__gtj2K']/text()")
+        op_dict['OP-title'] = owner_title[0]
+        # 这里的正文内容返回的是多行的P的列表，需要重新拼接
+        owner_details = reply_owner[0].xpath(".//div[@class='thread-content-detail']/p/text()")
+        op_dict['OP-content'] = "\n".join(owner_details)
+        #print(op_dict)
+        post_saved_list.append(op_dict)
 
-        # 提取回帖部分
-        reply_array = html.xpath("//div[@class='post-reply-list_post-reply-list-wrapper__o4_81 post-reply-list-wrapper']")
+        while True:
+            # 提取回帖部分
+            reply_array = html.xpath("//div[@class='post-reply-list_post-reply-list-wrapper__o4_81 post-reply-list-wrapper']")
+            for reply_item in reply_array:
+                reply_dict = {}
+                # 抓取回帖人昵称
+                reply_name = reply_item.xpath(".//div[@class='user-base-info']/a/text()")
+                reply_dict['RP-name'] = reply_name[0]
+                # 抓取引用人昵称
+                reply_quote_name = reply_item.xpath(".//div[@class='index_quote-text__HggrH']/span/a/text()")
+                # 抓取引用内容
+                reply_quote_content = reply_item.xpath(".//div[@class='index_simple-detail-content__3FPFA']/p/text()")
+                if len(reply_quote_name) > 0:
+                    reply_dict['QT-name'] = reply_quote_name[0]
+                    reply_dict['QT-content'] = reply_quote_content[0]
+                else:
+                    reply_dict['QT-name'] = ''
+                    reply_dict['QT-content'] = ''
+                # 抓取回帖内容
+                reply_content = reply_item.xpath(
+                    ".//div[@class='post-reply-list-content']//div[@class='thread-content-detail']/p/text()")
+                reply_dict['RP-content'] = "\n".join(reply_content)
+                # 获取完毕后,保存近最终列表
+                post_saved_list.append(reply_dict)
+            # 翻下一页，然后判断是否超出总的页码
+            cur_page += 1
+            if cur_page <= page_count:
+                post_url = base_url + '-' + str(cur_page) + ".html"
+                post_content = self.get_data(post_url)
+                html = etree.HTML(post_content.decode())
+            else:
+                print(post_saved_list)
+                print(f"已抓取{--cur_page}页，抓取结束")
+                break
 
 
+
+
+
+
+
+
+        # # 提取回帖部分
+        # reply_array = html.xpath("//div[@class='post-reply-list_post-reply-list-wrapper__o4_81 post-reply-list-wrapper']")
+        # for reply_item in reply_array:
+        #     reply_dict = {}
+        #     # 抓取回帖人昵称
+        #     reply_name = reply_item.xpath(".//div[@class='user-base-info']/a/text()")
+        #     reply_dict['RP-name'] = reply_name[0]
+        #     # 抓取引用人昵称
+        #     reply_quote_name = reply_item.xpath(".//div[@class='index_quote-text__HggrH']/span/a/text()")
+        #     # 抓取引用内容
+        #     reply_quote_content = reply_item.xpath(".//div[@class='index_simple-detail-content__3FPFA']/p/text()")
+        #     if len(reply_quote_name) > 0:
+        #         reply_dict['QT-name'] = reply_quote_name[0]
+        #         reply_dict['QT-content'] = reply_quote_content[0]
+        #     else:
+        #         reply_dict['QT-name'] = ''
+        #         reply_dict['QT-content'] = ''
+        #     # 抓取回帖内容
+        #     reply_content = reply_item.xpath(".//div[@class='post-reply-list-content']//div[@class='thread-content-detail']/p/text()")
+        #     reply_dict['RP-content'] = "\n".join(reply_content)
+        #
+        #
+        #
+        #     print(reply_dict)
 
 
 
