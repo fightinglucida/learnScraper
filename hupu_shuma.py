@@ -11,8 +11,6 @@ from selenium.webdriver.chrome.service import Service
 from webdriver_manager.chrome import ChromeDriverManager
 
 
-
-
 class Hupu(object):
     def __init__(self):
         self.rootUrl = "https://bbs.hupu.com"
@@ -28,10 +26,14 @@ class Hupu(object):
         # 按照热度排序后的话题分类列表
         self.heat_list = []
 
+        #初始化话题组
+        self.init_topic()
 
+    # 发送请求，接收URL，返回网页内容
     def get_data(self,url):
         response = requests.get(url, headers = self.headers)
         return response.content
+
     # 将热度值由字符串值改为整数值
     def str2int(self,stringNumber):
         if 'w' in stringNumber:
@@ -60,13 +62,34 @@ class Hupu(object):
 
         self.topic_list = topic_list
         self.heat_list = sorted(self.topic_list, key=lambda x: x['topic_heat'], reverse=True)
-        for rank,topic in enumerate(self.heat_list, start=1):
-            print(f"热度第{rank}名：{topic['topic_name']}-{topic['topic_type']}-热度值：{topic['topic_heat']}")
+
+        # for rank,topic in enumerate(self.heat_list, start=1):
+        #     print(f"热度第{rank}名：{topic['topic_name']}-{topic['topic_type']}-热度值：{topic['topic_heat']}")
 
 
     def init_topic(self):
         topic_data = self.get_data(self.rootUrl)
         self.parse_topic(topic_data)
+    def print_topic(self, topic_list):
+
+        topic_list = self.heat_list
+        # 列宽度
+        rank_width = 10
+        topic_width = 20
+        section_width = 15
+        popularity_width = 10
+        # 打印表头
+        # 打印表头
+        print(f"{'热度排名'.ljust(rank_width)}{'话题名'.ljust(topic_width)}{'分区'.ljust(section_width)}{'热度值'.rjust(popularity_width)}")
+        print('-' * (rank_width + topic_width + section_width + popularity_width))
+
+        # 打印每一行数据
+        for index, item in enumerate(topic_list):
+            rank = str(index).ljust(rank_width)
+            topic = item['topic_name'].ljust(topic_width)
+            section = item['topic_type'].ljust(section_width)
+            popularity = str(item['topic_heat']).rjust(popularity_width)
+            print(f"{rank}{topic}{section}{popularity}")
 
     def parse_list_data(self,data):
         html = etree.HTML(data.decode())
@@ -129,9 +152,8 @@ class Hupu(object):
         df = pd.DataFrame(data)
         df.to_excel(filename, index=False, engine='openpyxl')
 
-    def run(self):
+    def get_posts_list(self):
         next_url = self.url
-
         while True:
             # 发送列表请求，获取网页内容
             list_page_data = self.get_data(next_url)
@@ -145,9 +167,11 @@ class Hupu(object):
                 break
 
             self.data_list += data_list
-            time.sleep(random.randint(400, 900)/1000.0)
+            time.sleep(random.randint(400, 900) / 1000.0)
         self.saveData(self.data_list)
         print(f"总计爬取并保存数据 {len(self.data_list)} 条")
+
+
 
     # 获取单个帖子的楼主发布和回复信息的整合后的内容，整合为docx 或者 txt
     '''
@@ -237,7 +261,7 @@ class Hupu(object):
 
     def export_to_txt(self, post_list):
         print("export to text")
-        import json
+
 
         data = post_list
 
@@ -268,11 +292,43 @@ class Hupu(object):
 
         print("文件已成功导出为 forum_posts.txt")
 
+    # 程序主要入口
+    def run(self):
+        '''
+        询问要做什么工作？
+         - 1.查询虎扑主题热度
+         - 2.获取特定主题热帖
+         - 3.导出特定热帖内容
+        '''
+        print(" -- 虎扑热帖数据分析工具 -- ")
+        while True:
+            print('''请选择要执行的人物：
+    - 1.查询虎扑主题热度
+    - 2.获取特定主题热帖
+    - 3.导出特定热帖内容
+    - 4.退出程序
+            ''')
+            choice = input("请输入人物编号 （1/2/3）:")
+            if choice == "1":
+                self.print_topic(self.heat_list)
+                topic_index = int(input("请输入你要抓取的话题数据（输入排序数字）："))
+                self.url = self.heat_list[topic_index]['topic_url'] + "-postdate"
+                print("你抓取的话题为：", self.heat_list[topic_index]['topic_name'])
+                self.get_posts_list()
+            elif choice == "2":
+                print("打印出主题列表和热度排名，等待输入列表序号")
+            elif choice == "3":
+                print("请输入对应热帖的链接")
+            elif choice == "4":
+                break
+            else:
+                print("无效的选择，请输入 1、2、3、4。")
+
 
 
 if __name__ == '__main__':
     hupu = Hupu()
-    response = hupu.get_posts("https://bbs.hupu.com/626803953.html")
+    response = hupu.run()
 
 
 
