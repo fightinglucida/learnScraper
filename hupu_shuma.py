@@ -3,12 +3,14 @@ import time
 import random
 import requests
 import pandas as pd
+import urllib3
 from lxml import etree
 from datetime import datetime
 from selenium import webdriver
 from selenium.webdriver.common.by import By
 from selenium.webdriver.chrome.service import Service
 from webdriver_manager.chrome import ChromeDriverManager
+urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
 
 class Hupu(object):
@@ -31,7 +33,7 @@ class Hupu(object):
 
     # 发送请求，接收URL，返回网页内容
     def get_data(self,url):
-        response = requests.get(url, headers = self.headers)
+        response = requests.get(url, headers = self.headers, verify=False)
         return response.content
 
     # 将热度值由字符串值改为整数值
@@ -119,19 +121,27 @@ class Hupu(object):
         el_list = html.xpath("//div[@class='bbs-sl-web-post-layout']")
         for el in el_list:
             temp = {}
+            # 解析帖子标题
             parse_title = el.xpath("./div[@class='post-title']/a/text()")
             temp["title"] = parse_title[0]
+            # 解析帖子链接
             parse_link = el.xpath("./div[@class='post-title']/a/@href")
             temp["link"] = "https://bbs.hupu.com" + parse_link[0]
+            # 解析帖子阅读和回复数量
             parse_reply_view = el.xpath("./div[@class='post-datum']/text()")
             parse_reply, parse_view = parse_reply_view[0].split(' / ')
             temp["reply"] = self.str2int(parse_reply)
             temp["view"] = self.str2int(parse_view)
-
+            # 解析帖子作者
             parse_author = el.xpath("./div[@class='post-auth']/a/text()")
-            temp["author_name"] = parse_author[0]
+            if len(parse_author) != 0:
+                temp["author_name"] = parse_author[0]
+            else:
+                temp["author_name"] = "匿名"
+            # 解析帖子作者链接
             parse_author_link = el.xpath("./div[@class='post-auth']/a/@href")
             temp["author_link"] = parse_author_link[0]
+            # 解析帖子发布时间
             parse_post_time = el.xpath("./div[@class='post-time']/text()")
             temp["post_time"] = parse_post_time[0]
             data_list.append(temp)
@@ -290,7 +300,7 @@ class Hupu(object):
         with open(filename, 'w', encoding='utf-8') as f:
             f.write(output_str)
 
-        print("文件已成功导出为 forum_posts.txt")
+        print(f"文件已成功导出为 {filename}")
 
     # 程序主要入口
     def run(self):
@@ -302,23 +312,30 @@ class Hupu(object):
         '''
         print(" -- 虎扑热帖数据分析工具 -- ")
         while True:
-            print('''请选择要执行的人物：
+            print('''请选择要执行的任务：
     - 1.查询虎扑主题热度
     - 2.获取特定主题热帖
     - 3.导出特定热帖内容
     - 4.退出程序
             ''')
-            choice = input("请输入人物编号 （1/2/3）:")
+            choice = input("请输入任务编号 （1/2/3/4）:")
             if choice == "1":
                 self.print_topic(self.heat_list)
                 topic_index = int(input("请输入你要抓取的话题数据（输入排序数字）："))
+                self.data_list = []
+                self.topic = self.heat_list[topic_index]['topic_name']
                 self.url = self.heat_list[topic_index]['topic_url'] + "-postdate"
                 print("你抓取的话题为：", self.heat_list[topic_index]['topic_name'])
+                print("话题链接为：", self.url)
                 self.get_posts_list()
             elif choice == "2":
                 print("打印出主题列表和热度排名，等待输入列表序号")
             elif choice == "3":
-                print("请输入对应热帖的链接")
+                while True:
+                    post_url = input("请输入热帖的网址(返回上一级输：0)：")
+                    if post_url == "0":
+                        break
+                    self.get_posts(post_url)
             elif choice == "4":
                 break
             else:
