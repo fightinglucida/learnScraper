@@ -1,5 +1,6 @@
 # coding:utf-8
 import time
+import re
 import random
 import requests
 import pandas as pd
@@ -12,6 +13,16 @@ from selenium.webdriver.chrome.service import Service
 from webdriver_manager.chrome import ChromeDriverManager
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
+
+
+def sanitize_filename(filename: str, placeholder: str) -> str:
+    # 定义不允许出现在文件名中的特殊字符
+    invalid_chars = r'[<>:"/\\|?*]'
+
+    # 用指定的占位符替换所有特殊字符
+    sanitized_filename = re.sub(invalid_chars, placeholder, filename)
+
+    return sanitized_filename
 
 class Hupu(object):
     def __init__(self):
@@ -157,7 +168,7 @@ class Hupu(object):
         current_time = datetime.now()
         # 格式化时间为指定格式
         formatted_time = current_time.strftime("%Y%m%d%H%M")
-        filename = self.topic + "_" + formatted_time + ".xlsx"
+        filename = "./汇总/" + self.topic + "_" + formatted_time + ".xlsx"
         print(filename)
         df = pd.DataFrame(data)
         df.to_excel(filename, index=False, engine='openpyxl')
@@ -296,6 +307,9 @@ class Hupu(object):
         # 将结果列表转换为单个字符串
         output_str = '\n'.join(output_lines)
         filename = f"{op['OP-title']}.txt"
+
+        placeholder = "_"
+        filename = sanitize_filename(filename, placeholder)
         # 将字符串写入文件
         with open(filename, 'w', encoding='utf-8') as f:
             f.write(output_str)
